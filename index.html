@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1020">
+  <meta name="description" content="CodeQuest is a local-first adaptive learning game for practicing programming concepts.">
+  <title>CodeQuest</title>
+  <link rel="stylesheet" href="assets/css/game.css">
+</head>
+<body>
+  <header class="site-header">
+    <div class="topbar">
+      <a class="brand" href="#" data-action="home" aria-label="CodeQuest home">
+        <span class="brand-mark" aria-hidden="true">CQ</span>
+        <span>CODE<span class="brand-accent">QUEST</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation" hidden>
+        <button class="nav-link" type="button" data-action="nav-dashboard" aria-current="page">Overview</button>
+        <button class="nav-link" type="button" data-action="nav-topics">Topics</button>
+        <button class="nav-link" type="button" data-action="review">Review <span class="nav-count" data-review-count>0</span></button>
+      </nav>
+      <div class="topbar-right">
+        <button class="settings-button" type="button" data-action="open-data" aria-label="Settings">
+          <span class="settings-status-dot" aria-hidden="true"></span>
+          <span>Settings</span>
+          <span class="settings-button-icon" aria-hidden="true">⚙</span>
+        </button>
+      </div>
+    </div>
+  </header>
+  <div class="app-shell">
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <main id="app" tabindex="-1"></main>
+    <footer class="footer-note">Local-first prototype · No account or cloud sync</footer>
+  </div>
+  <dialog class="confirm-dialog" id="session-exit-dialog" aria-labelledby="session-exit-title" aria-describedby="session-exit-copy">
+    <form method="dialog" class="confirm-dialog-card">
+      <p class="eyebrow">LEAVE SESSION</p>
+      <h2 id="session-exit-title">End this session?</h2>
+      <p class="confirm-dialog-copy" id="session-exit-copy">Your answers so far will be saved, but this session will end.</p>
+      <div class="confirm-dialog-actions">
+        <button class="button button-secondary" type="submit" value="cancel">Keep playing</button>
+        <button class="button button-primary" type="button" data-action="confirm-session-exit">End session</button>
+      </div>
+    </form>
+  </dialog>
+  <input id="import-file" type="file" accept="application/json,.json" hidden>
+  <script src="assets/js/question_bank.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
