@@ -34,7 +34,8 @@ The current prototype loads only `assets/js/question_bank.js` and `assets/js/app
 - Questions do not repeat within a session. Adaptive sessions prefer the learner's recommended difficulty; fixed-level sessions stay at the selected difficulty and finish if no matching unused questions remain. Mistake review still shows the original missed questions regardless of this preference.
 - Answer choices are shuffled each time a question appears, while saved attempt history continues to record the choice's original question-bank index.
 - Each question accepts one answer only. After feedback, Continue stays disabled for three seconds; repeated clicks or answer events cannot record another response or skip the cooldown.
-- Correct and incorrect answers play distinct short tones. Sounds can be turned off in **Data & settings**; they are generated locally by the browser and no audio files are downloaded.
+- Buttons, tabs, menus, and correct or incorrect answers play short tones. Sounds can be turned off in **Data & settings**; they are generated locally through one shared browser audio context, rate-limited to avoid bursts, and no audio files are downloaded.
+- Session timers and continue countdowns are stopped when a session is left, imported, or reset. Popup surfaces avoid expensive backdrop blur and release the audio context when the page is unloaded.
 - The dashboard has persistent Overview, Topics, and Review navigation, plus subject filters for the topic list.
 - The question session uses a compact viewport layout: answer choices form a two-column grid on wide and most mobile screens, with session details collapsed on small screens. Very short viewports retain scrolling so answers and controls remain reachable.
 
