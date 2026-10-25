@@ -79,6 +79,33 @@
     }
   }
 
+  function closeTopicFilterMenu(returnFocus = false) {
+    const menu = document.querySelector('.topic-filter-menu');
+    if (!menu) return;
+    const trigger = menu.querySelector('[data-action="toggle-topic-filter"]');
+    const options = menu.querySelector('.topic-filter-options');
+    if (!trigger || !options) return;
+    options.hidden = true;
+    trigger.setAttribute('aria-expanded', 'false');
+    menu.classList.remove('is-open');
+    if (returnFocus) trigger.focus();
+  }
+
+  function toggleTopicFilterMenu() {
+    const menu = document.querySelector('.topic-filter-menu');
+    if (!menu) return;
+    const trigger = menu.querySelector('[data-action="toggle-topic-filter"]');
+    const options = menu.querySelector('.topic-filter-options');
+    if (!trigger || !options) return;
+    const isOpen = trigger.getAttribute('aria-expanded') === 'true';
+    closeTopicFilterMenu();
+    if (!isOpen) {
+      options.hidden = false;
+      trigger.setAttribute('aria-expanded', 'true');
+      menu.classList.add('is-open');
+    }
+  }
+
   function setDifficultyPreference(preference) {
     if (!DIFFICULTY_PREFERENCES.includes(preference)) {
       throw new Error(`Unsupported difficulty preference: ${preference}`);
@@ -725,7 +752,7 @@
   }
 
   function renderStatsCard(label, value, foot, valueClass = '') {
-    return `<article class="panel stat-card"><div class="stat-label">${escapeHtml(label)}</div><div class="stat-value ${escapeHtml(valueClass)}">${escapeHtml(value)}</div><div class="stat-foot">${escapeHtml(foot)}</div></article>`;
+    return `<article class="stat-card"><div class="stat-label">${escapeHtml(label)}</div><div class="stat-value ${escapeHtml(valueClass)}">${escapeHtml(value)}</div><div class="stat-foot">${escapeHtml(foot)}</div></article>`;
   }
 
   function renderTopicCard(topic) {
@@ -741,13 +768,15 @@
           <span class="subject-tag">${escapeHtml(topic.subject)}</span>
           <span class="small muted">${metrics.attempts.length} ${metrics.attempts.length === 1 ? 'attempt' : 'attempts'}</span>
         </div>
-        <h3>${escapeHtml(topic.title)}</h3>
-        <p>${escapeHtml(topic.description)}</p>
+        <div class="topic-summary">
+          <h3>${escapeHtml(topic.title)}</h3>
+          <p>${escapeHtml(topic.description)}</p>
+        </div>
         <div class="topic-mastery">
           <div class="mastery-line"><span>${escapeHtml(accuracyLabel)}</span><span>${metrics.attempts.length ? `${progress}%` : '—'}</span></div>
           <div class="progress-track" aria-label="${escapeHtml(accuracyLabel)}"><div class="progress-fill" style="width:${progress}%"></div></div>
         </div>
-        <button class="button button-small button-secondary" type="button" data-action="start-topic" data-topic="${escapeHtml(topic.id)}">Practice ${practiceQuestionCount} questions <span aria-hidden="true">→</span></button>
+        <button class="button button-small button-secondary" type="button" data-action="start-topic" data-topic="${escapeHtml(topic.id)}">Practice ${practiceQuestionCount} <span aria-hidden="true">→</span></button>
       </article>`;
   }
 
@@ -806,8 +835,15 @@
           </div>
         </div>
         <div class="overview-content">
-        <div class="stats-grid">
-          <article class="panel stat-card difficulty-card">
+        <section class="panel progress-panel" aria-labelledby="progress-heading">
+          <div class="progress-heading">
+            <div>
+              <p class="eyebrow">Your progress</p>
+              <h2 id="progress-heading">Learning snapshot</h2>
+            </div>
+          </div>
+          <div class="stats-grid">
+          <article class="stat-card difficulty-card">
             <span class="stat-label" id="difficulty-label">Current difficulty</span>
             <div class="stat-value difficulty-${currentDifficulty}">${escapeHtml(difficultyLabel)}</div>
             <div class="difficulty-select-wrap">
@@ -828,9 +864,11 @@
               : 'Fixed for learning sessions · review keeps original questions'}
             </div>
           </article>
-          ${renderStatsCard('Questions', String(attempts.length), `${accuracyFor(attempts)}% overall accuracy`)}
-          ${renderStatsCard('Topics mastered', String(mastered), 'At least 3 attempts and 80% accuracy')}
-        </div>
+          ${renderStatsCard('Questions answered', String(attempts.length), `${accuracyFor(attempts)}% overall accuracy`)}
+          ${renderStatsCard('Topics mastered', String(mastered), '3+ attempts · 80% accuracy')}
+          </div>
+          <span class="progress-badge">Private on this device</span>
+        </section>
         <section class="panel start-panel" aria-labelledby="start-heading">
           <div class="start-main">
             <p class="eyebrow">Recommended next</p>
@@ -854,8 +892,20 @@
             <div><p class="eyebrow">Choose a learning path</p><h2>Practice by topic</h2></div>
             <p class="small muted">Pick a topic, or let adaptive mode choose.</p>
           </div>
-          <div class="topic-filter" role="group" aria-label="Filter topics by subject">
-            ${topicFilters.map(([id, label]) => `<button class="filter-chip" type="button" data-action="filter-topics" data-filter="${id}" aria-pressed="${topicFilter === id}">${label}</button>`).join('')}
+          <div class="topic-filter-select">
+            <span>Browse subject</span>
+            <div class="topic-filter-menu">
+              <button class="topic-filter-trigger" type="button" data-action="toggle-topic-filter" aria-haspopup="listbox" aria-expanded="false" aria-controls="topic-filter-options">
+                <span>${topicFilters.find(([id]) => id === topicFilter)?.[1] || 'All topics'}</span>
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
+              </button>
+              <div class="topic-filter-options" id="topic-filter-options" role="listbox" aria-label="Filter topics by subject" hidden>
+                ${topicFilters.map(([id, label]) => `<button class="topic-filter-option" type="button" role="option" aria-selected="${topicFilter === id}" data-action="filter-topics" data-filter="${id}">
+                  <span>${label}</span>
+                  <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3.2 3.2L13 4.5" /></svg>
+                </button>`).join('')}
+              </div>
+            </div>
           </div>
           <div class="topic-grid">${visibleTopics.map(renderTopicCard).join('')}</div>
         </section>
@@ -945,6 +995,20 @@
               <div class="progress-track" role="progressbar" aria-label="Challenge energy" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${enemyHealth}"><div class="progress-fill" style="width:${enemyHealth}%"></div></div>
             </div>
           </div>
+          <div class="player-status" aria-label="Your session status">
+            <div class="player-status-item player-health-status">
+              <span class="player-status-icon" aria-hidden="true">♥</span>
+              <span><small>Your HP</small><strong>${adaptive ? `${run.health} / 100` : 'Practice'}</strong></span>
+            </div>
+            <div class="player-status-item">
+              <span class="player-status-icon wrong" aria-hidden="true">×</span>
+              <span><small>Wrong answers</small><strong>${session?.wrong || 0}</strong></span>
+            </div>
+            <div class="player-status-item">
+              <span class="player-status-icon correct" aria-hidden="true">✓</span>
+              <span><small>Correct</small><strong>${session?.correct || 0}</strong></span>
+            </div>
+          </div>
           <article class="panel question-card">
             <div class="question-meta">
               <span class="subject-tag">${escapeHtml(topic.subject)}</span>
@@ -958,11 +1022,14 @@
               <summary>Why this question?</summary>
               <p>${escapeHtml(run.currentReason)}</p>
             </details>
-            <div class="game-controls">
-              <span class="small muted">${activeRun.correct ? 'Your answer weakened the challenge.' : activeRun.answered && adaptive ? 'Recover and use the explanation on the next question.' : ''}</span>
-              ${run.answered ? `<button class="button button-primary" type="button" data-action="next-question" disabled>Continue in 3s</button>` : ''}
-            </div>
           </article>
+          ${run.answered ? `<div class="answer-action-panel">
+            <div class="answer-action-copy">
+              <span class="answer-action-kicker">${activeRun.correct ? 'Challenge weakened' : 'Keep going'}</span>
+              <span class="small muted">${activeRun.correct ? 'Nice work. You are ready for the next question.' : adaptive ? 'Use the explanation above and try the next question.' : 'Review the explanation before continuing.'}</span>
+            </div>
+            <button class="button button-primary" type="button" data-action="next-question" disabled>Continue in 3s <span aria-hidden="true">→</span></button>
+          </div>` : ''}
         </div>
         <aside class="game-sidebar" aria-label="Session information">
           <section class="panel side-card">
@@ -970,6 +1037,7 @@
             <div class="side-stat"><span>Health</span><strong>${adaptive ? `${run.health} / 100` : 'No health loss'}</strong></div>
             ${adaptive ? `<div class="progress-track" role="progressbar" aria-label="Player health" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${healthWidth}"><div class="progress-fill" style="width:${healthWidth}%;background:${healthWidth <= 35 ? 'var(--red)' : 'var(--green)'}"></div></div>` : ''}
             <div class="side-stat"><span>Correct</span><strong>${session?.correct || 0}</strong></div>
+            <div class="side-stat"><span>Wrong answers</span><strong>${session?.wrong || 0}</strong></div>
             <div class="side-stat"><span>Questions</span><strong>${session?.questionCount || 0} / ${run.questionLimit}</strong></div>
             <div class="clock" ${adaptive && !run.answered ? '' : 'hidden'}><span class="small muted">Time left</span><strong class="clock-value"><span id="timer-value">${run.timeLeft}</span>s</strong></div>
             <div class="progress-track" id="timer-track" ${adaptive && !run.answered ? '' : 'hidden'} style="margin-top:9px"><div id="timer-fill" class="progress-fill" style="width:${(run.timeLeft / QUESTION_TIME) * 100}%;background:var(--gold)"></div></div>
@@ -1072,6 +1140,7 @@
     renderNotice();
     renderNavigation();
     document.body.classList.toggle('game-view', view === 'game');
+    document.body.classList.toggle('result-view', view === 'result');
     if (view === 'login') renderLogin();
     else if (view === 'dashboard') renderDashboard();
     else if (view === 'game') renderGame();
@@ -1231,6 +1300,7 @@
 
   document.addEventListener('click', event => {
     if (!event.target.closest('.difficulty-select-wrap')) closeDifficultyMenu();
+    if (!event.target.closest('.topic-filter-menu')) closeTopicFilterMenu();
     const answer = event.target.closest('[data-answer]');
     if (answer) {
       answerQuestion(Number(answer.dataset.answer));
@@ -1244,6 +1314,8 @@
       const isOpen = control.getAttribute('aria-expanded') === 'true';
       if (isOpen) closeDifficultyMenu();
       else openDifficultyMenu();
+    } else if (action === 'toggle-topic-filter') {
+      toggleTopicFilterMenu();
     } else if (action === 'choose-difficulty') {
       setDifficultyPreference(control.dataset.difficulty);
     } else if (action === 'confirm-session-exit') {
@@ -1317,6 +1389,8 @@
 
   document.addEventListener('keydown', event => {
     const trigger = event.target.closest('[data-action="toggle-difficulty"]');
+    const topicTrigger = event.target.closest('[data-action="toggle-topic-filter"]');
+    const topicOption = event.target.closest('.topic-filter-option');
     const option = event.target.closest('[role="option"][data-difficulty]');
     if (trigger) {
       if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
@@ -1329,6 +1403,38 @@
       } else if (event.key === 'Escape' && trigger.getAttribute('aria-expanded') === 'true') {
         event.preventDefault();
         closeDifficultyMenu();
+      }
+      return;
+    }
+    if (topicTrigger) {
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        toggleTopicFilterMenu();
+        const options = topicTrigger.closest('.topic-filter-menu')?.querySelectorAll('.topic-filter-option');
+        const selected = topicTrigger.closest('.topic-filter-menu')?.querySelector('.topic-filter-option[aria-selected="true"]');
+        if (options && selected) selected.focus();
+      } else if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        toggleTopicFilterMenu();
+      } else if (event.key === 'Escape' && topicTrigger.getAttribute('aria-expanded') === 'true') {
+        event.preventDefault();
+        closeTopicFilterMenu(true);
+      }
+      return;
+    }
+    if (topicOption) {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeTopicFilterMenu(true);
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const options = Array.from(topicOption.closest('.topic-filter-menu').querySelectorAll('.topic-filter-option'));
+        const index = options.indexOf(topicOption);
+        const nextIndex = (index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length;
+        options[nextIndex].focus();
+      } else if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        topicOption.click();
       }
       return;
     }
