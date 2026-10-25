@@ -63,7 +63,35 @@
     options.hidden = true;
     trigger.setAttribute('aria-expanded', 'false');
     trigger.closest('.difficulty-select-wrap')?.classList.remove('is-open');
+    trigger.closest('.start-panel')?.classList.remove('difficulty-menu-open');
+    trigger.closest('.overview-content')?.classList.remove('difficulty-menu-open');
+    trigger.closest('.dashboard-content')?.classList.remove('difficulty-menu-open');
+    options.style.removeProperty('top');
+    options.style.removeProperty('left');
+    options.style.removeProperty('width');
+    options.style.removeProperty('max-height');
     if (returnFocus) trigger.focus();
+  }
+
+  function positionDifficultyMenu() {
+    const trigger = document.querySelector('[data-action="toggle-difficulty"]');
+    const options = document.getElementById('difficulty-options');
+    if (!trigger || !options) return;
+    const triggerRect = trigger.getBoundingClientRect();
+    const gap = 8;
+    const viewportPadding = 12;
+    const preferredHeight = Math.min(330, options.scrollHeight || 330);
+    const spaceBelow = window.innerHeight - triggerRect.bottom - gap - viewportPadding;
+    const opensAbove = spaceBelow < Math.min(preferredHeight, 240) && triggerRect.top > preferredHeight + gap + viewportPadding;
+    const maxHeight = Math.max(150, opensAbove
+      ? triggerRect.top - gap - viewportPadding
+      : window.innerHeight - triggerRect.bottom - gap - viewportPadding);
+    options.style.left = `${triggerRect.left}px`;
+    options.style.width = `${triggerRect.width}px`;
+    options.style.maxHeight = `${maxHeight}px`;
+    options.style.top = `${opensAbove
+      ? triggerRect.top - Math.min(preferredHeight, maxHeight) - gap
+      : triggerRect.bottom + gap}px`;
   }
 
   function openDifficultyMenu(focusSelected = false) {
@@ -73,6 +101,10 @@
     options.hidden = false;
     trigger.setAttribute('aria-expanded', 'true');
     trigger.closest('.difficulty-select-wrap')?.classList.add('is-open');
+    trigger.closest('.start-panel')?.classList.add('difficulty-menu-open');
+    trigger.closest('.overview-content')?.classList.add('difficulty-menu-open');
+    trigger.closest('.dashboard-content')?.classList.add('difficulty-menu-open');
+    positionDifficultyMenu();
     if (focusSelected) {
       const selected = options.querySelector('[aria-selected="true"]');
       if (selected) selected.focus();
@@ -800,7 +832,6 @@
     ];
     const selectedDifficulty = difficultyOptions.find(option => option.value === data.settings.difficultyPreference);
     const selectedMode = data.settings.mode;
-    const focusReason = recommendationReason(focus.topic.id);
     const visibleTopics = topicFilter === 'all'
       ? QUESTION_BANK
       : QUESTION_BANK.filter(topic => topic.subjectId === topicFilter);
@@ -846,27 +877,6 @@
             </div>
           </div>
           <div class="stats-grid">
-          <article class="stat-card difficulty-card">
-            <span class="stat-label" id="difficulty-label">Current difficulty</span>
-            <div class="stat-value difficulty-${currentDifficulty}">${escapeHtml(difficultyLabel)}</div>
-            <div class="difficulty-select-wrap">
-              <button class="difficulty-select-trigger" type="button" data-action="toggle-difficulty" aria-haspopup="listbox" aria-expanded="false" aria-controls="difficulty-options" aria-labelledby="difficulty-label difficulty-selected">
-                <span id="difficulty-selected">${escapeHtml(selectedDifficulty.label)}</span>
-                <svg class="difficulty-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
-              </button>
-              <div class="difficulty-options" id="difficulty-options" role="listbox" aria-labelledby="difficulty-label" hidden>
-                ${difficultyOptions.map(option => `<div class="difficulty-option difficulty-option-${option.value}" id="difficulty-option-${option.value}" role="option" tabindex="-1" aria-selected="${data.settings.difficultyPreference === option.value}" data-action="choose-difficulty" data-difficulty="${option.value}">
-                  <span class="difficulty-option-dot" aria-hidden="true"></span>
-                  <span class="difficulty-option-copy"><span class="difficulty-option-title">${escapeHtml(option.label)}</span><span class="difficulty-option-description">${escapeHtml(option.description)}</span></span>
-                  <svg class="difficulty-option-check" viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3.2 3.2L13 4.5" /></svg>
-                </div>`).join('')}
-              </div>
-            </div>
-            <div class="stat-foot">${data.settings.difficultyPreference === 'adaptive'
-              ? `Recommended for ${escapeHtml(focus.topic.title)} · adjusts from recent answers`
-              : 'Fixed for learning sessions · review keeps original questions'}
-            </div>
-          </article>
           <div class="learning-totals">
           ${renderStatsCard('Questions answered', String(attempts.length), `${accuracyFor(attempts)}% overall accuracy`)}
           ${renderStatsCard('Topics mastered', String(mastered), '3+ attempts · 80% accuracy')}
@@ -886,8 +896,28 @@
               <button class="mode-button" type="button" data-action="set-mode" data-mode="practice" aria-pressed="${selectedMode === 'practice'}">Relaxed practice</button>
             </div>
           </div>
-          <div>
-            <div class="reason-card"><strong>Why this topic?</strong>${escapeHtml(focusReason)}</div>
+          <div class="start-side">
+            <article class="start-difficulty">
+              <span class="stat-label" id="difficulty-label">Current difficulty</span>
+              <div class="stat-value difficulty-${currentDifficulty}">${escapeHtml(difficultyLabel)}</div>
+              <div class="difficulty-select-wrap">
+                <button class="difficulty-select-trigger" type="button" data-action="toggle-difficulty" aria-haspopup="listbox" aria-expanded="false" aria-controls="difficulty-options" aria-labelledby="difficulty-label difficulty-selected">
+                  <span id="difficulty-selected">${escapeHtml(selectedDifficulty.label)}</span>
+                  <svg class="difficulty-chevron" viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4 4 4-4" /></svg>
+                </button>
+                <div class="difficulty-options" id="difficulty-options" role="listbox" aria-labelledby="difficulty-label" hidden>
+                  ${difficultyOptions.map(option => `<div class="difficulty-option difficulty-option-${option.value}" id="difficulty-option-${option.value}" role="option" tabindex="-1" aria-selected="${data.settings.difficultyPreference === option.value}" data-action="choose-difficulty" data-difficulty="${option.value}">
+                    <span class="difficulty-option-dot" aria-hidden="true"></span>
+                    <span class="difficulty-option-copy"><span class="difficulty-option-title">${escapeHtml(option.label)}</span><span class="difficulty-option-description">${escapeHtml(option.description)}</span></span>
+                    <svg class="difficulty-option-check" viewBox="0 0 16 16" aria-hidden="true"><path d="m3 8 3.2 3.2L13 4.5" /></svg>
+                  </div>`).join('')}
+                </div>
+              </div>
+              <div class="stat-foot">${data.settings.difficultyPreference === 'adaptive'
+                ? `Recommended for ${escapeHtml(focus.topic.title)} · adjusts from recent answers`
+                : 'Fixed for learning sessions · review keeps original questions'}
+              </div>
+            </article>
             <button class="button button-primary full-width" style="margin-top:11px" type="button" data-action="start-learning">Start learning <span aria-hidden="true">→</span></button>
           </div>
         </section>
