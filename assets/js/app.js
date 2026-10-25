@@ -826,6 +826,7 @@
       </article>`;
     }).join('');
     app.innerHTML = `
+      ${activeDashboardTab === 'overview' ? `
       <section>
         <div class="welcome-row">
           <div>
@@ -834,6 +835,8 @@
             <p class="muted small">Small steps make strong foundations. Your recommended difficulty adapts to your recent answers.</p>
           </div>
         </div>
+      </section>` : ''}
+      <section class="dashboard-content">
         <div class="overview-content">
         <section class="panel progress-panel" aria-labelledby="progress-heading">
           <div class="progress-heading">
@@ -864,8 +867,10 @@
               : 'Fixed for learning sessions · review keeps original questions'}
             </div>
           </article>
+          <div class="learning-totals">
           ${renderStatsCard('Questions answered', String(attempts.length), `${accuracyFor(attempts)}% overall accuracy`)}
           ${renderStatsCard('Topics mastered', String(mastered), '3+ attempts · 80% accuracy')}
+          </div>
           </div>
           <span class="progress-badge">Private on this device</span>
         </section>
