@@ -2154,6 +2154,20 @@ h1 { letter-spacing: -.055em; }
   transform: none !important;
   animation: none !important;
 }
+.overview-content .start-panel,
+.overview-content .progress-panel {
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.overview-content .start-panel:hover,
+.overview-content .progress-panel:hover {
+  transform: translateY(-3px);
+  border-color: rgba(117, 240, 208, .48);
+  box-shadow: 0 20px 46px rgba(0, 0, 0, .28), 0 0 24px rgba(117, 240, 208, .06);
+}
+.overview-content.difficulty-menu-open .start-panel:hover,
+.overview-content.difficulty-menu-open .progress-panel:hover {
+  transform: none;
+}
 @media (min-width: 621px) {
   .progress-panel .stats-grid {
     grid-template-columns: minmax(0, 1fr);
@@ -2213,6 +2227,10 @@ h1 { letter-spacing: -.055em; }
 @media (max-width: 620px) {
   #app[data-dashboard-tab="overview"] {
     overflow: visible;
+  }
+  .overview-content .start-panel:hover,
+  .overview-content .progress-panel:hover {
+    transform: none;
   }
   .start-difficulty .difficulty-options {
     max-height: min(300px, 48vh);
