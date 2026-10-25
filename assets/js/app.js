@@ -783,23 +783,28 @@
     app.innerHTML = `
       <section class="login-layout">
         <div class="hero-copy">
-          <p class="eyebrow">A local-first learning adventure</p>
-          <h1>Learn concepts.<br><span>Defeat the bugs.</span></h1>
-          <p>Practice HTML, CSS, JavaScript, and C# with short challenges that respond to what you know and what you are ready to learn next.</p>
+          <p class="eyebrow">Adaptive programming practice</p>
+          <h1>Build skill.<br><span>Defeat the bugs.</span></h1>
+          <p>Level up your HTML, CSS, JavaScript, and C# skills through focused challenges that adapt to your performance as you learn.</p>
           <ul class="hero-points">
-            <li>Questions adapt by topic and recent performance</li>
-            <li>Helpful explanations after every answer</li>
-            <li>Your attempts stay in this browser</li>
+            <li><span class="hero-point-icon" aria-hidden="true">↗</span><span>Challenges adapt to your progress</span></li>
+            <li><span class="hero-point-icon" aria-hidden="true">✦</span><span>Feedback helps every answer count</span></li>
+            <li><span class="hero-point-icon" aria-hidden="true">⌁</span><span>Your learning data stays on this device</span></li>
           </ul>
         </div>
         <form class="panel login-card" id="login-form">
-          <p class="eyebrow">Player profile</p>
-          <h2>Welcome, learner.</h2>
-          <p class="small muted">Choose a display name to begin. This is a local profile, not an online account.</p>
+          <div class="login-card-heading">
+            <span class="login-card-mark" aria-hidden="true">&gt;_</span>
+            <div>
+              <p class="eyebrow">Player profile</p>
+              <h2>Ready to begin?</h2>
+            </div>
+          </div>
+          <p class="small muted">Choose a display name and start a practice run built around your current level.</p>
           <label for="player-name">Display name</label>
           <input class="text-input" id="player-name" name="name" maxlength="24" autocomplete="nickname" placeholder="e.g. Code Explorer" required>
           <button class="button button-primary full-width" type="submit">Start learning <span aria-hidden="true">→</span></button>
-          <p class="privacy-note">No sign-in, server, or network connection is used. Do not use a name that identifies another person.</p>
+          <p class="privacy-note"><span aria-hidden="true">●</span> No sign-in or network connection required.</p>
         </form>
       </section>`;
     const field = document.getElementById('player-name');
@@ -1194,8 +1199,10 @@
   function render() {
     renderNotice();
     renderNavigation();
+    app.dataset.dashboardTab = view === 'dashboard' ? activeDashboardTab : '';
     document.body.classList.toggle('game-view', view === 'game');
     document.body.classList.toggle('result-view', view === 'result');
+    document.body.classList.toggle('login-view', view === 'login');
     if (view === 'login') renderLogin();
     else if (view === 'dashboard') renderDashboard();
     else if (view === 'game') renderGame();
