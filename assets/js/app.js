@@ -882,7 +882,6 @@
           ${renderStatsCard('Topics mastered', String(mastered), '3+ attempts · 80% accuracy')}
           </div>
           </div>
-          <span class="progress-badge">Private on this device</span>
         </section>
         <section class="panel start-panel" aria-labelledby="start-heading">
           <div class="start-main">
@@ -955,7 +954,6 @@
           ${reviewQueue.length ? `<div class="review-list">${reviewItems}</div>` : '<div class="empty-state review-empty">No missed questions in your review queue yet.</div>'}
         </section>
         <div class="dashboard-footer">
-          <span class="small muted">Your progress stays private on this device.</span>
           <span class="small muted">${completedSessions} completed ${completedSessions === 1 ? 'session' : 'sessions'} on this device</span>
         </div>
       </section>`;
@@ -1136,7 +1134,7 @@
     app.innerHTML = `
       <section class="settings-layout">
         <button class="button button-secondary button-small" type="button" data-action="home">← Dashboard</button>
-        <div style="margin-top:24px"><p class="eyebrow">Local data</p><h1>Data & settings</h1><p class="muted small">This prototype stores progress in this browser only. It does not sync between devices.</p></div>
+        <div style="margin-top:24px"><p class="eyebrow">Local data</p><h1>Data & settings</h1><p class="muted small">Your progress stays private on this device. This prototype stores progress in this browser only and does not sync between devices.</p></div>
         ${hasRecoveryCopy ? `<div class="data-warning" style="margin-top:16px">A previous save could not be read. It is preserved separately and will not be imported automatically. Download this recovery copy before resetting if you may need it. <button class="button button-small button-secondary" style="margin-top:10px" type="button" data-action="export-recovery">Download recovery copy</button></div>` : ''}
         <section class="panel settings-card">
           <h2>Profile</h2>
