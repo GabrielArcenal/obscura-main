@@ -787,9 +787,9 @@
           <h1>Build skill.<br><span>Defeat the bugs.</span></h1>
           <p>Level up your HTML, CSS, JavaScript, and C# skills through focused challenges that adapt to your performance as you learn.</p>
           <ul class="hero-points">
-            <li><span class="hero-point-icon" aria-hidden="true">↗</span><span>Challenges adapt to your progress</span></li>
+            <li><span class="hero-point-icon" aria-hidden="true">✦</span><span>Challenges adapt to your progress</span></li>
             <li><span class="hero-point-icon" aria-hidden="true">✦</span><span>Feedback helps every answer count</span></li>
-            <li><span class="hero-point-icon" aria-hidden="true">⌁</span><span>Your learning data stays on this device</span></li>
+            <li><span class="hero-point-icon" aria-hidden="true">✦</span><span>Your learning data stays on this device</span></li>
           </ul>
         </div>
         <form class="panel login-card" id="login-form">
