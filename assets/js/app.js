@@ -37,6 +37,7 @@
   let noticeHideTimeoutId = null;
   let pendingSessionExit = null;
   let topicFilter = 'all';
+  let activeDashboardTab = 'overview';
 
   function emptyData(name = '') {
     return {
@@ -352,6 +353,13 @@
       notify(`The recovery copy could not be read from browser storage: ${error.message}`);
       return null;
     }
+
+  }
+
+  function updateModeButtons(mode) {
+    document.querySelectorAll('[data-action="set-mode"]').forEach(button => {
+      button.setAttribute('aria-pressed', String(button.dataset.mode === mode));
+    });
   }
 
   function escapeHtml(value) {
@@ -774,6 +782,20 @@
       ['javascript', 'JavaScript'],
       ['csharp', 'C#']
     ];
+    const reviewQueue = getReviewQueue();
+    const reviewItems = reviewQueue.slice(0, 6).map(attempt => {
+      const question = questions.get(attempt.questionId);
+      const topic = topics.get(attempt.topicId);
+      if (!question || !topic) return '';
+      return `<article class="review-item">
+        <div>
+          <span class="subject-tag">${escapeHtml(topic.subject)}</span>
+          <h3>${escapeHtml(question.prompt)}</h3>
+          <p>${escapeHtml(topic.title)} · ${escapeHtml(attempt.difficulty)} difficulty</p>
+        </div>
+        <span class="review-item-status">Needs review</span>
+      </article>`;
+    }).join('');
     app.innerHTML = `
       <section>
         <div class="welcome-row">
@@ -783,6 +805,7 @@
             <p class="muted small">Small steps make strong foundations. Your recommended difficulty adapts to your recent answers.</p>
           </div>
         </div>
+        <div class="overview-content">
         <div class="stats-grid">
           <article class="panel stat-card difficulty-card">
             <span class="stat-label" id="difficulty-label">Current difficulty</span>
@@ -816,7 +839,7 @@
               ? 'Adaptive practice selects a topic and adjusts question difficulty from your recent answers.'
               : `Practice at ${escapeHtml(difficultyLabel)} difficulty. Change the level above whenever you want.`}</p>
             <div class="mode-toggle" role="group" aria-label="Choose learning mode">
-              <button class="mode-button" type="button" data-action="set-mode" data-mode="adaptive" aria-pressed="${selectedMode === 'adaptive'}">Adaptive adventure</button>
+              <button class="mode-button" type="button" data-action="set-mode" data-mode="adaptive" aria-pressed="${selectedMode === 'adaptive'}">Adapative Learning</button>
               <button class="mode-button" type="button" data-action="set-mode" data-mode="practice" aria-pressed="${selectedMode === 'practice'}">Relaxed practice</button>
             </div>
           </div>
@@ -825,6 +848,7 @@
             <button class="button button-primary full-width" style="margin-top:11px" type="button" data-action="start-learning">Start learning <span aria-hidden="true">→</span></button>
           </div>
         </section>
+        </div>
         <section class="topics-section" id="learning-topics">
           <div class="section-heading">
             <div><p class="eyebrow">Choose a learning path</p><h2>Practice by topic</h2></div>
@@ -835,11 +859,23 @@
           </div>
           <div class="topic-grid">${visibleTopics.map(renderTopicCard).join('')}</div>
         </section>
+        <section class="review-section">
+          <div class="review-hero panel">
+            <div>
+              <p class="eyebrow">Turn mistakes into momentum</p>
+              <h2>${reviewQueue.length ? `${reviewQueue.length} question${reviewQueue.length === 1 ? '' : 's'} ready to revisit` : 'You are all caught up'}</h2>
+              <p class="small muted">${reviewQueue.length ? 'Review questions you missed recently and strengthen the ideas behind each answer.' : 'Keep practicing and missed questions will appear here automatically.'}</p>
+            </div>
+            <button class="button button-primary" type="button" data-action="start-review" ${reviewQueue.length ? '' : 'disabled'}>${reviewQueue.length ? 'Start review' : 'No questions yet'} <span aria-hidden="true">→</span></button>
+          </div>
+          ${reviewQueue.length ? `<div class="review-list">${reviewItems}</div>` : '<div class="empty-state review-empty">No missed questions in your review queue yet.</div>'}
+        </section>
         <div class="dashboard-footer">
-          <span class="small muted">Review missed questions from the navigation above.</span>
+          <span class="small muted">Your progress stays private on this device.</span>
           <span class="small muted">${completedSessions} completed ${completedSessions === 1 ? 'session' : 'sessions'} on this device</span>
         </div>
       </section>`;
+    app.dataset.dashboardTab = activeDashboardTab;
   }
 
   function enemyForQuestion(questionNumber) {
@@ -899,7 +935,7 @@
       <section class="game-layout">
         <div class="panel game-main">
           <div class="game-header">
-            <div><p class="eyebrow">${adaptive ? 'Adaptive adventure' : run.mode === 'review' ? 'Mistake review' : 'Relaxed practice'}</p><p class="game-progress">Question ${run.questionNumber} of ${run.questionLimit}</p></div>
+            <div><p class="eyebrow">${adaptive ? 'Adapative Learning' : run.mode === 'review' ? 'Mistake review' : 'Relaxed practice'}</p><p class="game-progress">Question ${run.questionNumber} of ${run.questionLimit}</p></div>
             <button class="button button-secondary button-small" type="button" data-action="leave-game">Exit session</button>
           </div>
           <div class="enemy-card">
@@ -969,24 +1005,24 @@
         return `<div class="result-topic"><span>${escapeHtml(topic.title)}</span><div class="progress-track"><div class="progress-fill" style="width:${topicAccuracy}%"></div></div><strong>${topicAccuracy}%</strong></div>`;
       }).join('')
       : '<div class="empty-state">No questions were answered this session. Try a topic when you are ready.</div>';
-    const label = session.mode === 'adaptive' ? 'Adaptive adventure' : session.mode === 'review' ? 'Mistake review' : 'Relaxed practice';
+    const label = session.mode === 'adaptive' ? 'Adapative Learning' : session.mode === 'review' ? 'Mistake review' : 'Relaxed practice';
     app.innerHTML = `
       <section class="result-layout">
-        <div class="result-mark" aria-hidden="true">${cleanFinish ? '✓' : '↗'}</div>
-        <p class="eyebrow">${escapeHtml(label)}</p>
+        ${cleanFinish ? '<div class="result-mark is-complete" aria-hidden="true">✓</div>' : ''}
+        <p class="eyebrow result-kicker">${escapeHtml(label)}</p>
         <h1>${escapeHtml(title)}</h1>
-        <p class="muted">${cleanFinish ? 'Every attempt is useful evidence. Review your results and decide what to practice next.' : 'Your progress so far has been saved. You can continue from the dashboard whenever you are ready.'}</p>
+        <p class="result-intro muted">${cleanFinish ? 'Every attempt is useful evidence. Review your results and decide what to practice next.' : 'Your progress so far has been saved. You can continue from the dashboard whenever you are ready.'}</p>
         <div class="panel result-panel">
           <div class="result-stats">
-            <div class="result-stat"><div class="stat-label">Answered</div><strong>${session.questionCount}</strong></div>
-            <div class="result-stat"><div class="stat-label">Accuracy</div><strong>${accuracy}%</strong></div>
-            <div class="result-stat"><div class="stat-label">Challenges cleared</div><strong>${session.kills}</strong></div>
+            <div class="result-stat result-stat-primary"><div class="stat-label">Answered</div><strong>${session.questionCount}</strong><span>questions attempted</span></div>
+            <div class="result-stat"><div class="stat-label">Accuracy</div><strong>${accuracy}%</strong><span>overall performance</span></div>
+            <div class="result-stat"><div class="stat-label">Challenges cleared</div><strong>${session.kills}</strong><span>bugs defeated</span></div>
           </div>
-          <div class="section-heading"><div><p class="eyebrow">What you practiced</p><h2>Topic results</h2></div></div>
-          ${topicRows}
+          <div class="result-section-heading"><p class="eyebrow">What you practiced</p><h2>Topic results</h2><span class="result-section-line"></span></div>
+          <div class="result-topic-list">${topicRows}</div>
         </div>
-        <div class="button-row" style="justify-content:center;margin-top:20px">
-          <button class="button button-primary" type="button" data-action="start-learning">Play another session <span aria-hidden="true">→</span></button>
+        <div class="button-row result-actions">
+          <button class="button button-primary" type="button" data-action="start-learning">Play another session</button>
           <button class="button button-secondary" type="button" data-action="home">Back to dashboard</button>
         </div>
       </section>`;
@@ -1063,8 +1099,9 @@
     const topicsButton = nav.querySelector('[data-action="nav-topics"]');
     const reviewButton = nav.querySelector('[data-action="review"]');
     if (!dashboardButton || !topicsButton || !reviewButton) return;
-    dashboardButton.setAttribute('aria-current', view === 'dashboard' ? 'page' : 'false');
-    topicsButton.setAttribute('aria-current', view === 'dashboard' && topicFilter !== 'all' ? 'location' : 'false');
+    dashboardButton.setAttribute('aria-current', view === 'dashboard' && activeDashboardTab === 'overview' ? 'page' : 'false');
+    topicsButton.setAttribute('aria-current', view === 'dashboard' && activeDashboardTab === 'topics' ? 'page' : 'false');
+    reviewButton.setAttribute('aria-current', view === 'dashboard' && activeDashboardTab === 'review' ? 'page' : 'false');
     reviewButton.querySelector('[data-review-count]').textContent = String(getReviewQueue().length);
     reviewButton.setAttribute('aria-label', `Review missed questions, ${getReviewQueue().length} available`);
   }
@@ -1214,22 +1251,19 @@
     } else if (action === 'home') {
       if (requestSessionExit('home')) return;
       activeRun = null;
+      activeDashboardTab = 'overview';
       view = data.profile.name ? 'dashboard' : 'login';
       render();
     } else if (action === 'nav-dashboard') {
-      if (view !== 'dashboard') {
-        view = 'dashboard';
-        render();
-      }
+      activeDashboardTab = 'overview';
+      view = 'dashboard';
+      render();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (action === 'nav-topics') {
-      if (view !== 'dashboard') {
-        view = 'dashboard';
-        render();
-      }
-      window.setTimeout(() => {
-        document.getElementById('learning-topics')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 0);
+      activeDashboardTab = 'topics';
+      view = 'dashboard';
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } else if (action === 'filter-topics') {
       const filter = control.dataset.filter;
       if (!['all', 'html', 'css', 'javascript', 'csharp'].includes(filter)) return;
@@ -1244,14 +1278,20 @@
     } else if (action === 'set-mode') {
       const mode = control.dataset.mode;
       if (!['adaptive', 'practice'].includes(mode)) return;
+      const previousMode = data.settings.mode;
       data.settings.mode = mode;
-      saveData();
-      render();
+      if (saveData()) updateModeButtons(mode);
+      else data.settings.mode = previousMode;
     } else if (action === 'start-learning') {
       launchChosenMode();
     } else if (action === 'start-topic') {
       if (topics.has(control.dataset.topic)) startSession('practice', control.dataset.topic);
     } else if (action === 'review') {
+      activeDashboardTab = 'review';
+      view = 'dashboard';
+      render();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    } else if (action === 'start-review') {
       if (getReviewQueue().length) startSession('review');
       else notify('There are no missed questions to review yet. Keep practicing and missed questions will appear here.', 1000);
     } else if (action === 'next-question') {
