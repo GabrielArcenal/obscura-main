@@ -25,7 +25,7 @@ The current prototype loads only `assets/js/question_bank.js` and `assets/js/app
 
 ## Learning and game flow
 
-- **Adaptive adventure** selects the learning topic with the highest priority, chooses a question difficulty from recent performance, and uses a 25-second timer and health mechanic.
+- **Adapative Learning** selects the learning topic with the highest priority, chooses a question difficulty from recent performance, and uses a 25-second timer and health mechanic.
 - **Relaxed practice** uses adaptive topic selection without a timer or health loss.
 - **Topic practice** lets a learner focus on one learning objective, with each question in that topic asked once per session.
 - **Mistake review** offers questions whose latest recorded attempt was incorrect, with each question appearing at most once per review session. A correct review answer removes that question from the review queue; missed questions remain available for a later session.
