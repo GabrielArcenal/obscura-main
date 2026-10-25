@@ -101,7 +101,7 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 .settings-status-dot { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--green); }
 .settings-button-icon { color: var(--cyan); font-size: 15px; }
 
-#app { min-height: calc(100vh - 130px); padding: 36px 0 48px; }
+#app { min-height: calc(100vh - 130px); padding: 36px 0 48px; contain: layout paint; }
 .footer-note { padding: 18px 0 24px; color: var(--soft); font-size: 11px; text-align: center; }
 .notice {
   position: fixed;
@@ -136,13 +136,14 @@ button:focus-visible, input:focus-visible, a:focus-visible {
   max-width: none;
   padding: 0;
   overflow: visible;
+  contain: layout paint style;
   border: 1px solid rgba(101, 230, 218, .25);
   border-radius: 22px;
   background: transparent;
   color: var(--text);
   box-shadow: 0 28px 90px rgba(0, 0, 0, .5);
 }
-.confirm-dialog::backdrop { background: rgba(5, 11, 16, .74); backdrop-filter: blur(7px); }
+.confirm-dialog::backdrop { background: rgba(5, 11, 16, .78); }
 .confirm-dialog[open] { animation: dialogEnter .2s ease both; }
 .confirm-dialog-card {
   padding: clamp(24px, 6vw, 34px);
@@ -158,6 +159,10 @@ button:focus-visible, input:focus-visible, a:focus-visible {
 @keyframes dialogEnter {
   from { opacity: 0; transform: translateY(8px) scale(.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confirm-dialog[open] { animation: none; }
 }
 
 .eyebrow {
@@ -1658,7 +1663,7 @@ h1 { letter-spacing: -.055em; }
     radial-gradient(ellipse at 0 0, rgba(117, 240, 208, .08), transparent 65%),
     linear-gradient(145deg, rgba(24, 35, 57, .99), rgba(12, 19, 34, .99));
   box-shadow: 0 18px 44px rgba(0, 0, 0, .42), 0 0 26px rgba(117, 240, 208, .06);
-  backdrop-filter: blur(16px);
+  contain: layout paint;
   animation: difficultyMenuEnter .16s ease both;
 }
 .difficulty-options[hidden] { display: none; }
