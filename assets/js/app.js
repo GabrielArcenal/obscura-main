@@ -898,7 +898,6 @@
             <p class="small muted">Pick a topic, or let adaptive mode choose.</p>
           </div>
           <div class="topic-filter-select">
-            <span>Browse subject</span>
             <div class="topic-filter-menu">
               <button class="topic-filter-trigger" type="button" data-action="toggle-topic-filter" aria-haspopup="listbox" aria-expanded="false" aria-controls="topic-filter-options">
                 <span>${topicFilters.find(([id]) => id === topicFilter)?.[1] || 'All topics'}</span>
