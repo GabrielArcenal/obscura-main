@@ -29,6 +29,8 @@
   let timerId = null;
   let continueCountdownId = null;
   let audioContext = null;
+  let audioUnavailableNotified = false;
+  let lastUiSoundAt = 0;
   let activeRun = null;
   let lastRun = null;
   let view = 'login';
@@ -179,11 +181,14 @@
     continueCountdownId = window.setInterval(update, 100);
   }
 
-  function playAnswerSound(correct) {
+  function playSound(notes, type = 'sine', duration = 0.18) {
     if (!data.settings.soundEnabled) return;
     const AudioContextClass = window.AudioContext || window.webkitAudioContext;
     if (!AudioContextClass) {
-      notify('Sound is not supported by this browser. You can turn it off in Data & settings.');
+      if (!audioUnavailableNotified) {
+        audioUnavailableNotified = true;
+        notify('Sound is not supported by this browser. You can turn it off in Data & settings.');
+      }
       return;
     }
     try {
@@ -191,20 +196,19 @@
       const context = audioContext;
       const play = () => {
         const now = context.currentTime;
-        const notes = correct ? [660, 880] : [330, 220];
         notes.forEach((frequency, index) => {
           const oscillator = context.createOscillator();
           const gain = context.createGain();
-          const startAt = now + index * 0.12;
-          oscillator.type = correct ? 'sine' : 'triangle';
+          const startAt = now + index * 0.1;
+          oscillator.type = type;
           oscillator.frequency.setValueAtTime(frequency, startAt);
           gain.gain.setValueAtTime(0.0001, startAt);
-          gain.gain.exponentialRampToValueAtTime(0.12, startAt + 0.02);
-          gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.18);
+          gain.gain.exponentialRampToValueAtTime(0.1, startAt + 0.02);
+          gain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
           oscillator.connect(gain);
           gain.connect(context.destination);
           oscillator.start(startAt);
-          oscillator.stop(startAt + 0.2);
+          oscillator.stop(startAt + duration + 0.01);
         });
       };
       if (context.state === 'suspended') {
@@ -215,8 +219,26 @@
         play();
       }
     } catch (error) {
-      notify(`Answer sound could not be played: ${error.message}`);
+      notify(`Sound could not be played: ${error.message}`);
     }
+  }
+
+  function playUiSound() {
+    const now = performance.now();
+    if (now - lastUiSoundAt < 70) return;
+    lastUiSoundAt = now;
+    playSound([520], 'sine', 0.1);
+  }
+
+  function playAnswerSound(correct) {
+    playSound(correct ? [660, 880] : [330, 220], correct ? 'sine' : 'triangle', 0.18);
+  }
+
+  function releaseAudio() {
+    if (!audioContext) return;
+    const context = audioContext;
+    audioContext = null;
+    if (context.state !== 'closed') context.close().catch(() => {});
   }
 
   function isPlainObject(value) {
@@ -526,6 +548,7 @@
 
   function startSession(mode, topicId = null) {
     stopTimer();
+    stopContinueCountdown();
     const sessionId = makeId();
     const reviewQuestionIds = mode === 'review'
       ? getReviewQueue().slice(0, SESSION_LENGTH).map(question => question.id)
@@ -1265,6 +1288,8 @@
       if (!imported.profile.name) throw new Error('The backup does not contain a display name.');
       if (!window.confirm(`Replace the current local profile with “${imported.profile.name}” and ${imported.attempts.length} answer records? Export your current data first if you want to keep it.`)) return;
       data = imported;
+      stopTimer();
+      stopContinueCountdown();
       activeRun = null;
       lastRun = null;
       view = 'dashboard';
@@ -1283,6 +1308,8 @@
     try {
       localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem(`${STORAGE_KEY}.recovery`);
+      stopTimer();
+      stopContinueCountdown();
       data = emptyData();
       activeRun = null;
       lastRun = null;
@@ -1338,6 +1365,8 @@
       answerQuestion(Number(answer.dataset.answer));
       return;
     }
+    const interactive = event.target.closest('button, a, summary, label[for], [role="tab"], [role="option"]');
+    if (interactive && !interactive.disabled) playUiSound();
     const control = event.target.closest('[data-action]');
     if (!control) return;
     if (control.tagName === 'A') event.preventDefault();
@@ -1354,6 +1383,8 @@
       confirmSessionExit();
     } else if (action === 'home') {
       if (requestSessionExit('home')) return;
+      stopTimer();
+      stopContinueCountdown();
       activeRun = null;
       activeDashboardTab = 'overview';
       view = data.profile.name ? 'dashboard' : 'login';
@@ -1376,6 +1407,8 @@
       renderNavigation();
     } else if (action === 'open-data') {
       if (requestSessionExit('settings')) return;
+      stopTimer();
+      stopContinueCountdown();
       activeRun = null;
       view = 'settings';
       render();
@@ -1502,6 +1535,7 @@
   sessionExitDialog.addEventListener('close', () => {
     pendingSessionExit = null;
   });
+  window.addEventListener('pagehide', releaseAudio, { once: true });
 
   const interrupted = data.sessions.filter(session => session.status === 'in_progress');
   if (interrupted.length) {
