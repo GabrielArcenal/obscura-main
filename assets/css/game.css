@@ -1765,8 +1765,19 @@ h1 { letter-spacing: -.055em; }
   .difficulty-card { min-height: 148px; }
   .difficulty-select-wrap { margin-top: 7px; }
   .difficulty-select-trigger { min-height: 36px; padding-inline: 9px; font-size: 11px; }
-  .difficulty-options { top: calc(100% + 6px); padding: 5px; }
-  .difficulty-option { min-height: 44px; gap: 8px; padding: 6px 7px; }
+  .difficulty-options { padding: 6px; overscroll-behavior: contain; }
+  .difficulty-option {
+    min-height: 52px;
+    gap: 9px;
+    padding: 8px;
+    touch-action: manipulation;
+  }
+  .difficulty-option-description {
+    overflow: visible;
+    font-size: 10px;
+    white-space: normal;
+    text-overflow: clip;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
   .difficulty-select-trigger, .difficulty-chevron, .difficulty-option { transition: none; }
@@ -2241,6 +2252,7 @@ h1 { letter-spacing: -.055em; }
 @media (max-width: 620px) {
   #app[data-dashboard-tab="overview"] {
     overflow: visible;
+    contain: none;
   }
   .overview-content .start-panel:hover,
   .overview-content .progress-panel:hover {

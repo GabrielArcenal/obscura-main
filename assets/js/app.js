@@ -38,6 +38,8 @@
   let noticeTimeoutId = null;
   let noticeHideTimeoutId = null;
   let pendingSessionExit = null;
+  let difficultyMenuPlaceholder = null;
+  let closingDifficultyMenu = false;
   let topicFilter = 'all';
   let activeDashboardTab = 'overview';
 
@@ -61,18 +63,33 @@
   function closeDifficultyMenu(returnFocus = false) {
     const trigger = document.querySelector('[data-action="toggle-difficulty"]');
     const options = document.getElementById('difficulty-options');
-    if (!trigger || !options) return;
-    options.hidden = true;
-    trigger.setAttribute('aria-expanded', 'false');
-    trigger.closest('.difficulty-select-wrap')?.classList.remove('is-open');
-    trigger.closest('.start-panel')?.classList.remove('difficulty-menu-open');
-    trigger.closest('.overview-content')?.classList.remove('difficulty-menu-open');
-    trigger.closest('.dashboard-content')?.classList.remove('difficulty-menu-open');
-    options.style.removeProperty('top');
-    options.style.removeProperty('left');
-    options.style.removeProperty('width');
-    options.style.removeProperty('max-height');
-    if (returnFocus) trigger.focus();
+    if (!trigger || !options || closingDifficultyMenu) return;
+    closingDifficultyMenu = true;
+    try {
+      options.hidden = true;
+      trigger.setAttribute('aria-expanded', 'false');
+      trigger.closest('.difficulty-select-wrap')?.classList.remove('is-open');
+      trigger.closest('.start-panel')?.classList.remove('difficulty-menu-open');
+      trigger.closest('.overview-content')?.classList.remove('difficulty-menu-open');
+      trigger.closest('.dashboard-content')?.classList.remove('difficulty-menu-open');
+      options.style.removeProperty('top');
+      options.style.removeProperty('left');
+      options.style.removeProperty('width');
+      options.style.removeProperty('max-height');
+      if (difficultyMenuPlaceholder) {
+        const parent = difficultyMenuPlaceholder.parentNode;
+        if (parent) {
+          if (options.parentNode !== parent) parent.insertBefore(options, difficultyMenuPlaceholder.nextSibling);
+          difficultyMenuPlaceholder.remove();
+        } else {
+          options.remove();
+        }
+        difficultyMenuPlaceholder = null;
+      }
+      if (returnFocus) trigger.focus();
+    } finally {
+      closingDifficultyMenu = false;
+    }
   }
 
   function positionDifficultyMenu() {
@@ -82,24 +99,40 @@
     const triggerRect = trigger.getBoundingClientRect();
     const gap = 8;
     const viewportPadding = 12;
+    const viewportWidth = document.documentElement.clientWidth || window.innerWidth;
+    const viewportHeight = window.innerHeight;
+    const mobile = viewportWidth <= 620;
+    const width = Math.min(viewportWidth - viewportPadding * 2, mobile
+      ? Math.max(triggerRect.width, 280)
+      : triggerRect.width);
+    const left = Math.min(
+      Math.max(viewportPadding, triggerRect.left),
+      viewportWidth - width - viewportPadding
+    );
     const preferredHeight = Math.min(330, options.scrollHeight || 330);
-    const spaceBelow = window.innerHeight - triggerRect.bottom - gap - viewportPadding;
-    const opensAbove = spaceBelow < Math.min(preferredHeight, 240) && triggerRect.top > preferredHeight + gap + viewportPadding;
-    const maxHeight = Math.max(150, opensAbove
-      ? triggerRect.top - gap - viewportPadding
-      : window.innerHeight - triggerRect.bottom - gap - viewportPadding);
-    options.style.left = `${triggerRect.left}px`;
-    options.style.width = `${triggerRect.width}px`;
+    const spaceAbove = Math.max(0, triggerRect.top - gap - viewportPadding);
+    const spaceBelow = Math.max(0, viewportHeight - triggerRect.bottom - gap - viewportPadding);
+    const opensAbove = spaceBelow < preferredHeight && spaceAbove > spaceBelow;
+    const availableSpace = opensAbove ? spaceAbove : spaceBelow;
+    const maxHeight = Math.min(preferredHeight, availableSpace);
+    const top = opensAbove
+      ? triggerRect.top - maxHeight - gap
+      : triggerRect.bottom + gap;
+    options.style.left = `${left}px`;
+    options.style.width = `${width}px`;
     options.style.maxHeight = `${maxHeight}px`;
-    options.style.top = `${opensAbove
-      ? triggerRect.top - Math.min(preferredHeight, maxHeight) - gap
-      : triggerRect.bottom + gap}px`;
+    options.style.top = `${Math.max(viewportPadding, Math.min(top, viewportHeight - maxHeight - viewportPadding))}px`;
   }
 
   function openDifficultyMenu(focusSelected = false) {
     const trigger = document.querySelector('[data-action="toggle-difficulty"]');
     const options = document.getElementById('difficulty-options');
     if (!trigger || !options) return;
+    if (!difficultyMenuPlaceholder) {
+      difficultyMenuPlaceholder = document.createComment('difficulty-options');
+      options.parentNode.insertBefore(difficultyMenuPlaceholder, options);
+      document.body.append(options);
+    }
     options.hidden = false;
     trigger.setAttribute('aria-expanded', 'true');
     trigger.closest('.difficulty-select-wrap')?.classList.add('is-open');
@@ -111,6 +144,11 @@
       const selected = options.querySelector('[aria-selected="true"]');
       if (selected) selected.focus();
     }
+  }
+
+  function repositionOpenDifficultyMenu() {
+    const options = document.getElementById('difficulty-options');
+    if (options && !options.hidden) positionDifficultyMenu();
   }
 
   function closeTopicFilterMenu(returnFocus = false) {
@@ -1197,6 +1235,7 @@
   }
 
   function render() {
+    closeDifficultyMenu();
     renderNotice();
     renderNavigation();
     app.dataset.dashboardTab = view === 'dashboard' ? activeDashboardTab : '';
@@ -1365,7 +1404,8 @@
   });
 
   document.addEventListener('click', event => {
-    if (!event.target.closest('.difficulty-select-wrap')) closeDifficultyMenu();
+    const difficultyOptions = document.getElementById('difficulty-options');
+    if (!event.target.closest('.difficulty-select-wrap') && !difficultyOptions?.contains(event.target)) closeDifficultyMenu();
     if (!event.target.closest('.topic-filter-menu')) closeTopicFilterMenu();
     const answer = event.target.closest('[data-answer]');
     if (answer) {
@@ -1534,9 +1574,19 @@
   });
 
   document.addEventListener('focusout', event => {
+    if (closingDifficultyMenu) return;
     const wrapper = event.target.closest('.difficulty-select-wrap');
-    if (wrapper && !wrapper.contains(event.relatedTarget)) closeDifficultyMenu();
+    const options = document.getElementById('difficulty-options');
+    const focusRemainsInMenu = wrapper?.contains(event.relatedTarget) || options?.contains(event.relatedTarget);
+    if ((wrapper || options?.contains(event.target)) && !focusRemainsInMenu) closeDifficultyMenu();
   });
+
+  window.addEventListener('resize', repositionOpenDifficultyMenu);
+  document.addEventListener('scroll', repositionOpenDifficultyMenu, true);
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener('resize', repositionOpenDifficultyMenu);
+    window.visualViewport.addEventListener('scroll', repositionOpenDifficultyMenu);
+  }
 
   importFile.addEventListener('change', () => importData(importFile.files && importFile.files[0]));
   sessionExitDialog.addEventListener('close', () => {
